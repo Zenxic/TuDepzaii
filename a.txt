@@ -1,0 +1,143 @@
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    if method == "FireServer" or method == "InvokeServer" then
+        return wait(9e9)
+    end
+    return oldNamecall(self, ...)
+end)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+local NoclipEnabled = false
+
+local function Noclip()
+    if not Character then return end
+    if NoclipEnabled then
+        for _, v in pairs(Character:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = false
+            end
+        end
+        if HumanoidRootPart then
+            HumanoidRootPart.CanCollide = false
+        end
+    else
+        for _, v in pairs(Character:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = true
+            end
+        end
+        if HumanoidRootPart then
+            HumanoidRootPart.CanCollide = true
+        end
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(function(NewCharacter)
+    Character = NewCharacter
+    Humanoid = Character:WaitForChild("Humanoid")
+    HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+    if NoclipEnabled then
+        Noclip()
+    end
+end)
+
+RunService.Stepped:Connect(function()
+    if NoclipEnabled then
+        Noclip()
+    end
+end)
+
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local NoclipButton = Instance.new("TextButton")
+
+ScreenGui.Name = "TuDepZaiHub"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game:GetService("CoreGui")
+
+MainFrame.Size = UDim2.new(0, 200, 0, 100)
+MainFrame.Position = UDim2.new(0.8, 0, 0.5, -50)
+MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundTransparency = 1
+Title.Text = "TuDepZai Hub"
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.TextSize = 20
+Title.Font = Enum.Font.SourceSansBold
+Title.Parent = MainFrame
+
+NoclipButton.Size = UDim2.new(0.8, 0, 0, 30)
+NoclipButton.Position = UDim2.new(0.1, 0, 0.4, 0)
+NoclipButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+NoclipButton.Text = "Noclip"
+NoclipButton.TextColor3 = Color3.new(1, 1, 1)
+NoclipButton.Parent = MainFrame
+
+NoclipButton.MouseButton1Click:Connect(function()
+    NoclipEnabled = not NoclipEnabled
+    Noclip()
+    NoclipButton.BackgroundColor3 = NoclipEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(60, 60, 60)
+end)
+
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+game:GetService("CoreGui").ChildRemoved:Connect(function(child)
+    if child.Name == "TuDepZaiHub" then
+        NoclipEnabled = false
+        if Character then
+            for _, v in pairs(Character:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.CanCollide = true
+                end
+            end
+            if HumanoidRootPart then
+                HumanoidRootPart.CanCollide = true
+            end
+        end
+    end
+end)
